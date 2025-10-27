@@ -196,8 +196,21 @@ class RSAAttacks:
         rsa2.q = rsa1.q
         rsa2.phi = rsa1.phi
         
-        # Choose different public exponent
-        rsa2.e = 3 if e1 != 3 else 5
+        # Choose different public exponent that is coprime with phi
+        def gcd(a, b):
+            while b:
+                a, b = b, a % b
+            return a
+        
+        # Try to find a suitable e2
+        for candidate_e in [3, 5, 7, 11, 13, 17, 257, 65539]:
+            if candidate_e != e1 and gcd(candidate_e, rsa2.phi) == 1:
+                rsa2.e = candidate_e
+                break
+        else:
+            # Fallback - use a large prime
+            rsa2.e = 65539 if e1 != 65539 else 65543
+        
         rsa2.d = rsa2._mod_inverse(rsa2.e, rsa2.phi)
         rsa2.public_key = (rsa2.e, n)
         rsa2.private_key = (rsa2.d, n)
@@ -331,9 +344,10 @@ class RSADefenses:
         print("   - Prevents deterministic encryption")
         print("   - Protects against chosen-plaintext attacks")
         
-        message = "Hello, World!"
+        # Use a simple integer message for demonstration
+        message = 12345
         
-        print(f"\n2. Original message: '{message}'")
+        print(f"\n2. Original message: {message}")
         
         # Encrypt same message multiple times
         c1 = rsa.encrypt(message)
@@ -347,13 +361,10 @@ class RSADefenses:
         m1 = rsa.decrypt(c1)
         m2 = rsa.decrypt(c2)
         
-        # Convert back to string
-        m1_str = m1.to_bytes((m1.bit_length() + 7) // 8, byteorder='big').decode()
-        m2_str = m2.to_bytes((m2.bit_length() + 7) // 8, byteorder='big').decode()
-        
-        print(f"\n6. First decryption: '{m1_str}'")
-        print(f"7. Second decryption: '{m2_str}'")
-        print(f"8. Both decrypt correctly: {m1_str == m2_str == message}")
+        print(f"\n6. First decryption: {m1}")
+        print(f"7. Second decryption: {m2}")
+        print(f"8. Both decrypt to original message: {m1 == message and m2 == message}")
+        print(f"9. Decryptions match: {m1 == m2}")
         
         print("\nPadding makes RSA encryption non-deterministic and secure!")
         
